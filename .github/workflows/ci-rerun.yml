@@ -1,0 +1,35 @@
+name: ci-rerun
+# The #424 exercise caller. Identical to docs/CONSUMERS.md's stub except that
+# the implementation is fetched from the unreleased branch rather than a pin —
+# the reusable half resolves ceremony at CEREMONY_SELF_REF, which has no
+# actions/ci-rerun until this lands.
+on:
+  pull_request_target:
+    types: [labeled]
+permissions:
+  contents: read
+  actions: write
+  pull-requests: write
+jobs:
+  service:
+    if: >-
+      github.event.action == 'labeled' &&
+      github.event.label.name == 'rerun-owed'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ github.event.repository.default_branch }}
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          repository: cndgrr/ceremony
+          ref: build/424-ci-rerun
+          path: .ceremony-src
+      - uses: ./.ceremony-src/actions/ci-rerun
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          ACTOR: ${{ github.event.sender.login }}
+          EVENT_LABEL: ${{ github.event.label.name }}
